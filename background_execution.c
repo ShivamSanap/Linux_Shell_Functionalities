@@ -63,66 +63,113 @@ int main(int argc, char* argv[])
 
 		line[strlen(line)] = '\n'; 
 		tokens = tokenize(line);
+
+        while(waitpid(-1, NULL, WNOHANG)>0)
+        {
+            printf("bg process reaped");
+        }
+
+		int count=0;
+
+        for(i=0;tokens[i]!=NULL;i++)
+        {
+            printf("found token %s (remove this debug output later)\n", tokens[i]);
+            count+=1;
+        }
+        printf("%d\n", count);
+
+        if(strcmp(tokens[0],"exit")==0)
+        {
+            break;
+        }
    
-		if (tokens[0] != NULL && strcmp(tokens[0], "cd") == 0) 
-		{
-			if (tokens[1] == NULL) 
-			{
-				fprintf(stderr, "cd: missing argument\n");
-			} 
-			else if (tokens[2] != NULL) 
-			{
-				fprintf(stderr, "cd: too many arguments\n");
-			} 
-			else 
-			{
-				if (chdir(tokens[1]) != 0)
-				{
-					perror("cd failed");
-				}
-			}
+		if(strcmp((tokens[count-1]),"&")==0)
+        {
+            tokens[count-1]=NULL;
+            if (tokens[0] != NULL && strcmp(tokens[0], "cd") == 0)
+            {
+                if (tokens[1] == NULL)
+                {
+                    fprintf(stderr, "cd: missing argument\n");
+                }
+                else if (tokens[2] != NULL)
+                {
+                    fprintf(stderr, "cd: too many arguments\n");
+                }
+                else
+                {
+                    if (chdir(tokens[1]) != 0)
+                    {
+                        perror("cd failed");
+                    }
+                }
+                continue;
+            }
+            int pid = fork();
+            if (pid < 0)
+            {
+                perror("Fork failed");
+                exit(1);
+            }
 
-			for(int i=0; tokens[i]!=NULL; i++) {
-				free(tokens[i]);
-			}
-			free(tokens);
-			
-			continue;
-		}
+            else if(pid == 0)
+            {
+                execvp(tokens[0], tokens);
+                perror("exec failed");
+                exit(1);
+            }
+        }
+        else
+        {
+            if (tokens[0] != NULL && strcmp(tokens[0], "cd") == 0)
+            {
+                if (tokens[1] == NULL)
+                {
+                    fprintf(stderr, "cd: missing argument\n");
+                }
+                else if (tokens[2] != NULL)
+                {
+                    fprintf(stderr, "cd: too many arguments\n");
+                }
+                else
+                {
+                    if (chdir(tokens[1]) != 0)
+                    {
+                        perror("cd failed");
+                    }
+                }
+                continue;
+            }
+           
+            int pid = fork();
 
-		int pid = fork();
+            if (pid < 0)
+            {
+                perror("Fork failed");
+                exit(1);
+            }
 
-	   	if (pid < 0)
-		{
-			perror("Fork failed");
-			exit(1);
-		}
+            else if(pid == 0)
+            {
+                execvp(tokens[0], tokens);
+                perror("exec failed");
+                exit(1);
+            }
 
-		else if(pid == 0)
-		{
-			execvp(tokens[0], tokens);
-			perror("exec failed");
-			exit(1);
-		}
-
-		else
-		{		
-			int status;
-			wait(&status);
-			if (WIFEXITED(status)) 
-			{
-				int exit_code = WEXITSTATUS(status);
-				if (exit_code == 1) 
-				{
-					printf("EXITSTATUS: %d\n", exit_code);
-				}
-			}
-		}
-
-		for(i=0;tokens[i]!=NULL;i++)
-		{
-			printf("found token %s (remove this debug output later)\n", tokens[i]);
-		}
+            else
+            {
+                int status;
+                wait(&status);
+                if (WIFEXITED(status))
+                {
+                    int exit_code = WEXITSTATUS(status);
+                        if (exit_code == 1)
+                        {
+                            printf("EXITSTATUS: %d\n", exit_code);
+                        }
+                }
+            }
+        }
 		
 		for(i=0;tokens[i]!=NULL;i++)
 		{
