@@ -177,5 +177,20 @@ int main(int argc, char* argv[])
 		}
 		free(tokens);
 	}
+
+    for (int j = 0; j < bg_process; j++) 
+    {
+        if (kill(bg_pid[j], SIGTERM) == 0) 
+        {
+            printf("%d",bg_pid[j]);
+            printf("Killed background process %d\n", bg_pid[j]);
+            waitpid(bg_pid[j], NULL, 0); // reap it
+        }
+        else 
+        {
+            perror("error in killing bg process");
+        }    
+    }
+    printf("Exiting the shell....\n");
 	return 0;
 }
